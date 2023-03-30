@@ -1,0 +1,7 @@
+<library path="lib/libhri_navigation_layers">
+  <class
+    type="hri_navigation_layers::SimpleLayer"
+    base_class_type="costmap_2d::Layer">
+    <description>Testing custom costmap generation.</description>
+  </class>
+</library>
