@@ -12,7 +12,7 @@
 
 namespace hri_navigation_layers{
 class SimpleLayer : public costmap_2d::Layer{
-    public:
+public:
     SimpleLayer();
 
     /**
@@ -25,19 +25,22 @@ class SimpleLayer : public costmap_2d::Layer{
                                 double* min_x, double* min_y, double* max_x, double* max_y);
     virtual void updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j);
 
-    protected:
+protected:
 
     void cbPoint(const geometry_msgs::PointStamped& point);
     void reconfigure(SimpleLayerConfig& config, uint32_t level);
 
     ros::Subscriber sub_point_;
+    ros::Publisher pub_clicked_point_marker_;
     geometry_msgs::PointStamped point_;
     std::list<geometry_msgs::PointStamped> transformedPoints_;
     boost::recursive_mutex lock_;
     bool first_time_;
     double last_min_x_, last_min_y_, last_max_x_, last_max_y_, size_;
-
-    dynamic_reconfigure::Server<SimpleLayerConfig>* drserver_;
+    unsigned char cost_;
+    // Dynamic reconfigure objects
+    dynamic_reconfigure::Server<SimpleLayerConfig>* dsrv_;
+    dynamic_reconfigure::Server<SimpleLayerConfig>::CallbackType cb_;
 };
 }
 

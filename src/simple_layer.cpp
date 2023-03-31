@@ -5,6 +5,8 @@
 #include <boost/algorithm/string.hpp>
 #include <geometry_msgs/PointStamped.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <visualization_msgs/Marker.h>
+#include <visualization_msgs/MarkerArray.h>
 #include <map>
 #include <string>
 
@@ -22,15 +24,21 @@ SimpleLayer::SimpleLayer() {}
 void SimpleLayer::onInitialize(){
     ros::NodeHandle nh("~/" + name_), g_nh;
     ROS_INFO("Initializing SimpleLayer Plugin...");
+
+    cb_ = boost::bind(&SimpleLayer::reconfigure, this, _1, _2);
+    dsrv_ = new dynamic_reconfigure::Server<SimpleLayerConfig>(ros::NodeHandle("~/" + name_));
+    dsrv_->setCallback(cb_);
     sub_point_ = nh.subscribe("/clicked_point", 1, &SimpleLayer::cbPoint, this);
+    pub_clicked_point_marker_ = nh.advertise<visualization_msgs::Marker>("/cost_point", 1);
     first_time_ = true;
-    enabled_ = true;
+    cost_ = static_cast<unsigned char>(250);
+    
 }
 
 void SimpleLayer::updateBounds(double robot_x, double robot_y, double robot_yaw,
                             double* min_x, double* min_y, double* max_x, double* max_y){
     
-    // boost::recursive_mutex::scoped_lock lock(lock_);
+    boost::recursive_mutex::scoped_lock lock(lock_);
     std::string global_frame = layered_costmap_->getGlobalFrameID();
 
 
@@ -56,40 +64,55 @@ void SimpleLayer::updateBounds(double robot_x, double robot_y, double robot_yaw,
 
 void SimpleLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j){
     
-    // boost::recursive_mutex::scoped_lock lock(lock_);
-    ROS_INFO("Point array has length %lu", transformedPoints_.size());
+    boost::recursive_mutex::scoped_lock lock(lock_);
+    current_ = true;
     if (transformedPoints_.empty()) return;
-
     // Get costmap
     costmap_2d::Costmap2D* costmap = layered_costmap_->getCostmap();
 
     double res = costmap->getResolution();
-    ROS_INFO("Updating costs...");
+    // ROS_INFO("Updating costs...");
     geometry_msgs::PointStamped point = transformedPoints_.back();
-    int cx = static_cast<int>(point.point.x / res), cy = static_cast<int>(point.point.y / res);
-    int radius = static_cast<int>(size_/2 / res);
-    int max_x = static_cast<int>(costmap->getSizeInCellsX()), max_y = static_cast<int>(costmap->getSizeInCellsY());
+    visualization_msgs::Marker marker;
+    marker.header = point.header;
+    marker.id = 0;
+    marker.action = 0;
+    marker.type = 3;
+    marker.pose.position.x = point.point.x;
+    marker.pose.position.y = point.point.y;
+    marker.pose.position.z = point.point.z;
+    marker.pose.orientation.x = 0;
+    marker.pose.orientation.y = 0;
+    marker.pose.orientation.z = 0;
+    marker.pose.orientation.w = 1;
+    marker.scale.x = 0.5;
+    marker.scale.y = 0.5;
+    marker.scale.z = 0.15;
+    marker.color.b = 1.0;
+    marker.color.a = 0.7;
+    marker.lifetime = ros::Duration(0);
 
-    int start_x = cx - radius, start_y = cy - radius, end_x = cx + radius, end_y = cy + radius;
+    pub_clicked_point_marker_.publish(marker);
 
-    if (start_x < 0) start_x = 0;
-    if (start_y < 0) start_y = 0;
-    if (end_x > max_x) end_x = max_x;
-    if (end_y > max_y) end_y = max_y;
 
-    for (int i = start_x; i < end_x; i++)
-        for (int j = start_y; j < end_y; j++)
-            if ((cx - i)*(cx - i) + (cy - j)*(cy - j) > radius*radius)
-                costmap->setCost(i, j, costmap_2d::FREE_SPACE);
-            else
-                costmap->setCost(i, j, costmap_2d::LETHAL_OBSTACLE);
+    double cx = point.point.x, cy = point.point.y;
+    int radius = static_cast<int>(size_/2/res);
+
+    int obs_x, obs_y;
+    costmap->worldToMapNoBounds(cx, cy, obs_x, obs_y);
+
+
+    for (int i = min_i; i < max_i; i++)
+        for (int j = min_j; j < max_j; j++)
+            if (((obs_x - i)*(obs_x - i) + (obs_y - j)*(obs_y - j)) < radius*radius) 
+                costmap->setCost(i, j, cost_);
+
         
-    
 }
 
 void SimpleLayer::cbPoint(const geometry_msgs::PointStamped& point){
 
-    // boost::recursive_mutex::scoped_lock lock(lock_);
+    boost::recursive_mutex::scoped_lock lock(lock_);
     ROS_INFO("Got new point");
 
     std::string global_frame = layered_costmap_->getGlobalFrameID();
@@ -112,8 +135,9 @@ void SimpleLayer::cbPoint(const geometry_msgs::PointStamped& point){
 }
 
 void SimpleLayer::reconfigure(SimpleLayerConfig& config, uint32_t level){
-    // enabled_ = config.enabled;
+    enabled_ = config.enabled;
     size_ = config.size;
+    cost_ = static_cast<unsigned char>(config.cost);
 }
 
 }
