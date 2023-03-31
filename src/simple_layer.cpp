@@ -29,8 +29,10 @@ void SimpleLayer::onInitialize(){
     dsrv_ = new dynamic_reconfigure::Server<SimpleLayerConfig>(ros::NodeHandle("~/" + name_));
     dsrv_->setCallback(cb_);
     sub_point_ = nh.subscribe("/clicked_point", 1, &SimpleLayer::cbPoint, this);
+    g_sub_point_ = g_nh.subscribe("/clicked_point", 1, &SimpleLayer::cbGPoint, this);
     pub_clicked_point_marker_ = nh.advertise<visualization_msgs::Marker>("/cost_point", 1);
     first_time_ = true;
+    current_ = true;
     cost_ = static_cast<unsigned char>(250);
     
 }
@@ -65,7 +67,6 @@ void SimpleLayer::updateBounds(double robot_x, double robot_y, double robot_yaw,
 void SimpleLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j){
     
     boost::recursive_mutex::scoped_lock lock(lock_);
-    current_ = true;
     if (transformedPoints_.empty()) return;
     // Get costmap
     costmap_2d::Costmap2D* costmap = layered_costmap_->getCostmap();
@@ -101,7 +102,6 @@ void SimpleLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int
     int obs_x, obs_y;
     costmap->worldToMapNoBounds(cx, cy, obs_x, obs_y);
 
-
     for (int i = min_i; i < max_i; i++)
         for (int j = min_j; j < max_j; j++)
             if (((obs_x - i)*(obs_x - i) + (obs_y - j)*(obs_y - j)) < radius*radius) 
@@ -134,6 +134,29 @@ void SimpleLayer::cbPoint(const geometry_msgs::PointStamped& point){
 
 }
 
+void SimpleLayer::cbGPoint(const geometry_msgs::PointStamped& point){
+
+    // boost::recursive_mutex::scoped_lock lock(lock_);
+    // ROS_INFO("Got new point");
+
+    // std::string global_frame = layered_costmap_->getGlobalFrameID();
+    // geometry_msgs::PointStamped in, out;
+
+    // if (point.header.frame_id != global_frame){
+    //     in.header.frame_id = point.header.frame_id;
+    //     in.header.stamp = point.header.stamp;
+    //     in.point = point.point;
+
+    //     tf_->transform(in, out, global_frame);
+
+    //     transformedPoints_.push_back(out);        
+    //     ROS_INFO("Transformed point from %s frame to %s frame", point.header.frame_id.c_str(), global_frame.c_str());
+    // }
+    // else{
+    //     transformedPoints_.push_back(point);
+    // }
+
+}
 void SimpleLayer::reconfigure(SimpleLayerConfig& config, uint32_t level){
     enabled_ = config.enabled;
     size_ = config.size;
