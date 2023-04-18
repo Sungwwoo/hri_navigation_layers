@@ -1,19 +1,19 @@
-#ifndef _HRI_SIMPLE_NAVIGATION_LAYER_H_
-#define _HRI_SIMPLE_NAVIGATION_LAYER_H_
+#ifndef _VIRTUAL_NAVIGATION_LAYER_H_
+#define _VIRTUAL_NAVIGATION_LAYER_H_
 
 #include <ros/ros.h>
 #include <costmap_2d/layer.h>
 #include <costmap_2d/layered_costmap.h>
 #include <geometry_msgs/PointStamped.h>
-#include <hri_navigation_layers/SimpleLayerConfig.h>
+#include <virtual_navigation_layers/VirtualLayerConfig.h>
 #include <dynamic_reconfigure/server.h>
 #include <boost/thread.hpp>
 #include <list>
 
-namespace hri_navigation_layers{
-class SimpleLayer : public costmap_2d::Layer{
+namespace virtual_navigation_layers{
+class VirtualLayer : public costmap_2d::Layer{
 public:
-    SimpleLayer();
+    VirtualLayer();
 
     /**
      * @brief Called at the end of costmap_2d::Layer initialization
@@ -29,7 +29,7 @@ protected:
 
     void cbPoint(const geometry_msgs::PointStamped& point);
     void cbGPoint(const geometry_msgs::PointStamped& point);
-    void reconfigure(SimpleLayerConfig& config, uint32_t level);
+    void reconfigure(VirtualLayerConfig& config, uint32_t level);
 
 
     ros::Subscriber sub_point_, g_sub_point_;
@@ -42,8 +42,8 @@ protected:
     unsigned char cost_;
     
     // Dynamic reconfigure objects
-    dynamic_reconfigure::Server<SimpleLayerConfig>* dsrv_;
-    dynamic_reconfigure::Server<SimpleLayerConfig>::CallbackType cb_;
+    dynamic_reconfigure::Server<VirtualLayerConfig>* dsrv_;
+    dynamic_reconfigure::Server<VirtualLayerConfig>::CallbackType cb_;
 };
 }
 

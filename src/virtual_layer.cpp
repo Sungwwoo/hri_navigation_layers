@@ -1,4 +1,4 @@
-#include <hri_navigation_layers/simple_layer.h>
+#include <virtual_navigation_layers/virtual_layer.h>
 #include <ros/ros.h>
 #include <pluginlib/class_list_macros.h>
 #include <list>
@@ -11,15 +11,15 @@
 #include <string>
 
 
-PLUGINLIB_EXPORT_CLASS(hri_navigation_layers::SimpleLayer, costmap_2d::Layer)
+PLUGINLIB_EXPORT_CLASS(virtual_navigation_layers::VirtualLayer, costmap_2d::Layer)
 
 using costmap_2d::NO_INFORMATION;
 using costmap_2d::LETHAL_OBSTACLE;
 using costmap_2d::FREE_SPACE;
 
-namespace hri_navigation_layers{
+namespace virtual_navigation_layers{
 
-SimpleLayer::SimpleLayer() {}
+VirtualLayer::VirtualLayer() {}
 
 bool checkPointInList(const geometry_msgs::PointStamped point, std::list<geometry_msgs::PointStamped>& pointList){
     unsigned int size = pointList.size();
@@ -60,25 +60,28 @@ bool checkPointInList(const geometry_msgs::PointStamped point, std::list<geometr
     }
 }
 
-void SimpleLayer::onInitialize(){
+void VirtualLayer::onInitialize(){
     ros::NodeHandle nh("~/" + name_), g_nh;
-    ROS_INFO("Initializing SimpleLayer Plugin...");
+    ROS_INFO("Initializing VirtualLayer Plugin...");
 
     transformedPoints_.clear();
-    cb_ = boost::bind(&SimpleLayer::reconfigure, this, _1, _2);
-    dsrv_ = new dynamic_reconfigure::Server<SimpleLayerConfig>(ros::NodeHandle("~/" + name_));
+
+    cb_ = boost::bind(&VirtualLayer::reconfigure, this, _1, _2);
+    dsrv_ = new dynamic_reconfigure::Server<VirtualLayerConfig>(ros::NodeHandle("~/" + name_));
     dsrv_->setCallback(cb_);
-    sub_point_ = nh.subscribe("/clicked_point", 1, &SimpleLayer::cbPoint, this);
-    g_sub_point_ = g_nh.subscribe("/clicked_point", 1, &SimpleLayer::cbGPoint, this);
+
+    sub_point_ = nh.subscribe("/clicked_point", 1, &VirtualLayer::cbPoint, this);
+    g_sub_point_ = g_nh.subscribe("/clicked_point", 1, &VirtualLayer::cbGPoint, this);
+
     pub_clicked_point_marker_ = nh.advertise<visualization_msgs::MarkerArray>("/cost_point", 1);
+    
     first_time_ = true;
     current_ = true;
-    enabled_ = true;
     cost_ = static_cast<unsigned char>(250);
     
 }
 
-void SimpleLayer::updateBounds(double robot_x, double robot_y, double robot_yaw,
+void VirtualLayer::updateBounds(double robot_x, double robot_y, double robot_yaw,
                             double* min_x, double* min_y, double* max_x, double* max_y){
     
     boost::recursive_mutex::scoped_lock lock(lock_);
@@ -105,7 +108,7 @@ void SimpleLayer::updateBounds(double robot_x, double robot_y, double robot_yaw,
     }
 }
 
-void SimpleLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j){
+void VirtualLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j){
     
     boost::recursive_mutex::scoped_lock lock(lock_);
     if (transformedPoints_.empty()) return;
@@ -158,14 +161,14 @@ void SimpleLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int
     pub_clicked_point_marker_.publish(markerArray);
 }
 
-void SimpleLayer::cbPoint(const geometry_msgs::PointStamped& point){
+void VirtualLayer::cbPoint(const geometry_msgs::PointStamped& point){
 
     boost::recursive_mutex::scoped_lock lock(lock_);
     ROS_INFO("Checking new point");
+    
     // remove point if new point is already existing
     if (checkPointInList(point, transformedPoints_))
         return;
-
 
     std::string global_frame = layered_costmap_->getGlobalFrameID();
     geometry_msgs::PointStamped in, out;
@@ -186,16 +189,14 @@ void SimpleLayer::cbPoint(const geometry_msgs::PointStamped& point){
 
 }
 
-void SimpleLayer::cbGPoint(const geometry_msgs::PointStamped& point){
-
-
+void VirtualLayer::cbGPoint(const geometry_msgs::PointStamped& point){
+    return;
 }
-void SimpleLayer::reconfigure(SimpleLayerConfig& config, uint32_t level){
+
+void VirtualLayer::reconfigure(VirtualLayerConfig& config, uint32_t level){
     enabled_ = config.enabled;
     size_ = config.size;
     cost_ = static_cast<unsigned char>(config.cost);
 }
-
-
 
 }

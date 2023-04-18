@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>hri_navigation_layers</name>
+  <name>virtual_navigation_layers</name>
   <version>0.0.0</version>
-  <description>The hri_navigation_layers package</description>
+  <description>The virtual_navigation_layers package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->

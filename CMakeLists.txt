@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(hri_navigation_layers)
+project(virtual_navigation_layers)
 
 # # Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -30,11 +30,11 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/include
 )
 
-generate_dynamic_reconfigure_options(config/SimpleLayer.cfg)
+generate_dynamic_reconfigure_options(config/VirtualLayer.cfg)
 
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES hri_navigation_layers
+  LIBRARIES virtual_navigation_layers
   CATKIN_DEPENDS
   roscpp
   costmap_2d
@@ -49,9 +49,9 @@ catkin_package(
   dynamic_reconfigure
 )
 
-add_library(hri_navigation_layers src/simple_layer.cpp)
-add_dependencies(hri_navigation_layers ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-target_link_libraries(hri_navigation_layers ${catkin_LIBRARIES})
+add_library(virtual_navigation_layers src/virtual_layer.cpp)
+add_dependencies(virtual_navigation_layers ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+target_link_libraries(virtual_navigation_layers ${catkin_LIBRARIES})
 
 install(
   DIRECTORY include/${PROJECT_NAME}/
@@ -59,7 +59,7 @@ install(
 )
 
 install(
-  TARGETS hri_navigation_layers
+  TARGETS virtual_navigation_layers
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION}
