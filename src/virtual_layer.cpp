@@ -75,9 +75,18 @@ void VirtualLayer::onInitialize(){
 
     pub_clicked_point_marker_ = nh.advertise<visualization_msgs::MarkerArray>("/cost_point", 1);
     
+
+    visualization_msgs::Marker marker;
+    marker.id = 0;
+    marker.action = 3;
+    
+    removeMarkers_.markers.push_back(marker);
+
+    // inflation_layer_ = new costmap_2d::INflationLayer();
+
     first_time_ = true;
     current_ = true;
-    cost_ = static_cast<unsigned char>(250);
+    cost_ = static_cast<unsigned char>(254);
     
 }
 
@@ -87,6 +96,7 @@ void VirtualLayer::updateBounds(double robot_x, double robot_y, double robot_yaw
     boost::recursive_mutex::scoped_lock lock(lock_);
     std::string global_frame = layered_costmap_->getGlobalFrameID();
 
+    // inflation_layer_->updateBounds(robot_x, robot_y, robot_yaw, min_x, min_y, max_x, max_y);
 
     if (first_time_){
         last_min_x_ = *min_x;
@@ -106,11 +116,14 @@ void VirtualLayer::updateBounds(double robot_x, double robot_y, double robot_yaw
         last_max_x_ = c;
         last_max_y_ = d;
     }
+
+    
 }
 
 void VirtualLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, int min_j, int max_i, int max_j){
     
     boost::recursive_mutex::scoped_lock lock(lock_);
+    pub_clicked_point_marker_.publish(removeMarkers_);
     if (transformedPoints_.empty()) return;
     // Get costmap
     costmap_2d::Costmap2D* costmap = layered_costmap_->getCostmap();
@@ -152,10 +165,25 @@ void VirtualLayer::updateCosts(costmap_2d::Costmap2D& master_grid, int min_i, in
         int obs_x, obs_y;
         costmap->worldToMapNoBounds(cx, cy, obs_x, obs_y);
 
-        for (int i = min_i; i < max_i; i++)
-            for (int j = min_j; j < max_j; j++)
+        // for (int i = min_i; i < max_i; i++)
+        //     for (int j = min_j; j < max_j; j++)
+        //         if (((obs_x - i)*(obs_x - i) + (obs_y - j)*(obs_y - j)) < radius*radius) 
+        //             costmap->setCost(i, j, cost_);
+
+        unsigned char* master_array = master_grid.getCharMap();
+        unsigned int span = master_grid.getSizeInCellsX();
+
+        for (int j = min_j; j < max_j; j++){
+            unsigned int it = j * span + min_i;
+            for (int i = min_i; i < max_i; i++){
                 if (((obs_x - i)*(obs_x - i) + (obs_y - j)*(obs_y - j)) < radius*radius) 
-                    costmap->setCost(i, j, cost_);
+                    master_array[it] = cost_;
+                it++;
+            }
+        }
+        // costmap_2d::Costmap2D inflated_costmap;
+        // inflation_layer_->getCostmap();
+    
     }
 
     pub_clicked_point_marker_.publish(markerArray);
@@ -165,27 +193,20 @@ void VirtualLayer::cbPoint(const geometry_msgs::PointStamped& point){
 
     boost::recursive_mutex::scoped_lock lock(lock_);
     ROS_INFO("Checking new point");
-    
-    // remove point if new point is already existing
-    if (checkPointInList(point, transformedPoints_))
-        return;
 
     std::string global_frame = layered_costmap_->getGlobalFrameID();
     geometry_msgs::PointStamped in, out;
+    in.header.frame_id = point.header.frame_id;
+    in.header.stamp = point.header.stamp;
+    in.point = point.point;
 
-    if (point.header.frame_id != global_frame){
-        in.header.frame_id = point.header.frame_id;
-        in.header.stamp = point.header.stamp;
-        in.point = point.point;
+    tf_->transform(in, out, global_frame);
 
-        tf_->transform(in, out, global_frame);
-
-        transformedPoints_.push_back(out);        
-        ROS_INFO("Transformed point from %s frame to %s frame", point.header.frame_id.c_str(), global_frame.c_str());
-    }
-    else{
-        transformedPoints_.push_back(point);
-    }
+    // remove point if new point is already existing
+    if (checkPointInList(out, transformedPoints_))
+        return;
+    else
+        transformedPoints_.push_back(out);
 
 }
 

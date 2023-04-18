@@ -4,9 +4,11 @@
 #include <ros/ros.h>
 #include <costmap_2d/layer.h>
 #include <costmap_2d/layered_costmap.h>
+#include <costmap_2d/inflation_layer.h>
 #include <geometry_msgs/PointStamped.h>
 #include <virtual_navigation_layers/VirtualLayerConfig.h>
 #include <dynamic_reconfigure/server.h>
+#include <visualization_msgs/MarkerArray.h>
 #include <boost/thread.hpp>
 #include <list>
 
@@ -36,6 +38,7 @@ protected:
     ros::Publisher pub_clicked_point_marker_;
     geometry_msgs::PointStamped point_;
     std::list<geometry_msgs::PointStamped> transformedPoints_;
+    visualization_msgs::MarkerArray removeMarkers_;
     boost::recursive_mutex lock_;
     bool first_time_;
     double last_min_x_, last_min_y_, last_max_x_, last_max_y_, size_;
@@ -44,6 +47,8 @@ protected:
     // Dynamic reconfigure objects
     dynamic_reconfigure::Server<VirtualLayerConfig>* dsrv_;
     dynamic_reconfigure::Server<VirtualLayerConfig>::CallbackType cb_;
+// private:
+//     costmap_2d::InflationLayer* inflation_layer_;
 };
 }
 
