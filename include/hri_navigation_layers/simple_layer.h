@@ -31,6 +31,7 @@ protected:
     void cbGPoint(const geometry_msgs::PointStamped& point);
     void reconfigure(SimpleLayerConfig& config, uint32_t level);
 
+
     ros::Subscriber sub_point_, g_sub_point_;
     ros::Publisher pub_clicked_point_marker_;
     geometry_msgs::PointStamped point_;
