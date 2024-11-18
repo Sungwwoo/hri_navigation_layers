@@ -6,7 +6,7 @@ ROS Noetic Package for studying ROS custom costmap layer.
 # How to use
 Add to plugin list of ROS Navigation costmap parameters.
 
-![그림1](https://github.com/user-attachments/assets/093fc090-32db-4254-ab8d-3f950f58a499)
+![Screenshot from 2023-04-19 00-58-47](https://github.com/user-attachments/assets/8b106c08-48fa-4a98-98bc-5934134d3025)
 
 Use ```Publish Point``` of RViz to create and delete costmap.
 
